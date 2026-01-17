@@ -63,7 +63,7 @@ export default function Auth() {
 			try {
 				const isAuth = await authApi.isAuthenticated();
 				if (isAuth && isMounted) {
-					navigate("/dashboard", { replace: true });
+					navigate("/admin/business-owners", { replace: true });
 				}
 			} catch (error) {
 				// User not authenticated, stay on auth page
@@ -98,7 +98,7 @@ export default function Auth() {
 						y: 0,
 						duration: 0.8,
 					},
-					"-=0.4"
+					"-=0.4",
 				)
 				.to(
 					".floating-orb",
@@ -108,7 +108,7 @@ export default function Auth() {
 						stagger: 0.1,
 						duration: 0.6,
 					},
-					"-=0.6"
+					"-=0.6",
 				);
 
 			// Floating animation for orbs
@@ -136,7 +136,7 @@ export default function Auth() {
 			gsap.fromTo(
 				formRef.current,
 				{ opacity: 0, x: activeTab === "login" ? -20 : 20 },
-				{ opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }
+				{ opacity: 1, x: 0, duration: 0.4, ease: "power2.out" },
 			);
 		}
 	}, [activeTab]);
@@ -164,7 +164,7 @@ export default function Auth() {
 
 			// Navigate based on user role
 			setTimeout(() => {
-				navigate("/dashboard");
+				navigate("/admin/business-owners");
 			}, 500);
 		} catch (error: any) {
 			const errorMessage =
@@ -217,7 +217,7 @@ export default function Auth() {
 				description: "Tài khoản của bạn đã được tạo! Vui lòng xác thực email.",
 			});
 
-			navigate("/dashboard", { replace: true });
+			navigate("/admin/business-owners", { replace: true });
 		} catch (error: any) {
 			const errorMessage =
 				error.response?.data?.message ||
