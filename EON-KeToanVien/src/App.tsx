@@ -15,6 +15,8 @@ import Expenses from "./pages/Expenses";
 import Taxes from "./pages/Taxes";
 import Employees from "./pages/Employees";
 import Reports from "./pages/Reports";
+import AdminBusinessOwners from "./pages/AdminBusinessOwners";
+import AdminBusinessOwnerDetail from "./pages/AdminBusinessOwnerDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +42,15 @@ const App = () => (
 						<Route path="/taxes" element={<Taxes />} />
 						<Route path="/employees" element={<Employees />} />
 						<Route path="/reports" element={<Reports />} />
+
+						<Route
+							path="/admin/business-owners"
+							element={<AdminBusinessOwners />}
+						/>
+						<Route
+							path="/admin/business-owners/:id"
+							element={<AdminBusinessOwnerDetail />}
+						/>
 					</Route>
 
 					<Route path="*" element={<NotFound />} />

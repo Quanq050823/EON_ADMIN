@@ -15,6 +15,7 @@ export { customerApi } from "./customer.api";
 export { invoiceApi } from "./invoice.api";
 export { expenseApi } from "./expense.api";
 export { taxApi } from "./tax.api";
+export { adminApi } from "./admin.api";
 
 // Re-export types
 export type { RegisterData, LoginData, AuthResponse } from "./auth.api";
@@ -26,3 +27,15 @@ export type { Customer, CreateCustomerData } from "./customer.api";
 export type { OutputInvoice, CreateOutputInvoiceData } from "./invoice.api";
 export type { ExpenseVoucher, CreateExpenseVoucherData } from "./expense.api";
 export type { TaxSubmission, CreateTaxSubmissionData } from "./tax.api";
+export type {
+	AdminUser,
+	AdminBusinessOwner,
+	AdminAccountant,
+	AdminInvoiceIn,
+	AdminOutputInvoice,
+	AdminStorageItem,
+	AdminProduct,
+	PaginationParams,
+	PaginatedResponse,
+	SystemStats,
+} from "./admin.api";

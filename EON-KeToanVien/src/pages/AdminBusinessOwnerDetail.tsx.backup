@@ -1,0 +1,580 @@
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import {
+	adminApi,
+	type AdminBusinessOwner,
+	type AdminInvoiceIn,
+} from "@/services/api";
+import { useQuery } from "@tanstack/react-query";
+import {
+	ArrowLeft,
+	Building2,
+	Calendar,
+	FileText,
+	Mail,
+	MapPin,
+	Phone,
+	User,
+	Users,
+	DollarSign,
+	Shield,
+	Briefcase,
+	Hash,
+	Receipt,
+	ChevronLeft,
+	ChevronRight,
+} from "lucide-react";
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+
+export default function AdminBusinessOwnerDetail() {
+	const { id } = useParams<{ id: string }>();
+	const navigate = useNavigate();
+	const [currentPage, setCurrentPage] = useState(1);
+	const itemsPerPage = 10;
+
+	const {
+		data: response,
+		isLoading,
+		error,
+	} = useQuery({
+		queryKey: ["admin-business-owner-detail", id],
+		queryFn: () => adminApi.getBusinessOwnerById(id!),
+		enabled: !!id,
+	});
+
+	const businessOwner = response?.data;
+
+	const {
+		data: invoicesData,
+		isLoading: isLoadingInvoices,
+	} = useQuery({
+		queryKey: ["admin-invoices-in", id, currentPage, itemsPerPage],
+		queryFn: () =>
+			adminApi.getInvoicesInByBusinessOwner(id!, {
+				page: currentPage,
+				limit: itemsPerPage,
+				sortBy: "tdlap",
+				sortOrder: -1,
+			}),
+		enabled: !!id,
+	});
+
+	const invoices = invoicesData?.data || [];
+	const invoicesPagination = invoicesData?.pagination;
+
+	const formatDate = (dateString?: string) => {
+		if (!dateString) return "N/A";
+		return new Date(dateString).toLocaleDateString("vi-VN", {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+		});
+	};
+
+	const formatDateTime = (dateString?: string) => {
+		if (!dateString) return "N/A";
+		return new Date(dateString).toLocaleString("vi-VN", {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+		});
+	};
+
+	const formatCurrency = (amount?: number) => {
+		if (!amount) return "N/A";
+		return new Intl.NumberFormat("vi-VN", {
+			style: "currency",
+			currency: "VND",
+		}).format(amount);
+	};
+
+	const getStatusBadge = (status: string) => {
+		const variants = {
+			active:
+				"bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20",
+			inactive:
+				"bg-gray-500/10 text-gray-700 dark:text-gray-400 hover:bg-gray-500/20",
+			suspended:
+				"bg-red-500/10 text-red-700 dark:text-red-400 hover:bg-red-500/20",
+		};
+		const labels = {
+			active: "Hoạt động",
+			inactive: "Ngưng hoạt động",
+			suspended: "Tạm ngưng",
+		};
+		return (
+			<Badge
+				className={variants[status as keyof typeof variants]}
+				variant="secondary"
+			>
+				{labels[status as keyof typeof labels] || status}
+			</Badge>
+		);
+	};
+
+	const getFilingFrequencyText = (frequency?: number) => {
+		if (!frequency) return "N/A";
+		return frequency === 1
+			? "Theo quý"
+			: frequency === 2
+			? "Theo tháng"
+			: "N/A";
+	};
+
+	if (isLoading) {
+		return (
+			<div className="space-y-6 animate-fade-in">
+				<div className="flex items-center gap-4">
+					<Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+						<ArrowLeft className="h-5 w-5" />
+					</Button>
+					<div>
+						<h1 className="text-3xl font-bold tracking-tight">
+							Chi tiết Hộ kinh doanh
+						</h1>
+					</div>
+				</div>
+				<div className="flex items-center justify-center py-12">
+					<div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+					<p className="ml-4 text-muted-foreground">Đang tải dữ liệu...</p>
+				</div>
+			</div>
+		);
+	}
+
+	if (error || !businessOwner) {
+		return (
+			<div className="space-y-6 animate-fade-in">
+				<div className="flex items-center gap-4">
+					<Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+						<ArrowLeft className="h-5 w-5" />
+					</Button>
+					<div>
+						<h1 className="text-3xl font-bold tracking-tight">
+							Chi tiết Hộ kinh doanh
+						</h1>
+					</div>
+				</div>
+				<Card>
+					<CardContent className="p-6">
+						<div className="text-center text-red-500">
+							Không tìm thấy thông tin hộ kinh doanh.
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+		);
+	}
+
+	return (
+		<div className="space-y-6 animate-fade-in">
+			{/* Header */}
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-4">
+					<Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+						<ArrowLeft className="h-5 w-5" />
+					</Button>
+					<div>
+						<h1 className="text-3xl font-bold tracking-tight">
+							{businessOwner.businessName}
+						</h1>
+						<p className="text-muted-foreground">
+							Chi tiết thông tin hộ kinh doanh
+						</p>
+					</div>
+				</div>
+				<div className="flex items-center gap-2">
+					{getStatusBadge(businessOwner.businessStatus)}
+				</div>
+			</div>
+
+			{/* Business Information */}
+			<div className="grid gap-6 md:grid-cols-2">
+				{/* Basic Info */}
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<Building2 className="h-5 w-5" />
+							Thông tin cơ bản
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<Building2 className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">
+										Tên hộ kinh doanh
+									</p>
+									<p className="font-medium">{businessOwner.businessName}</p>
+								</div>
+							</div>
+							<Separator />
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<Hash className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">Mã số thuế</p>
+									<p className="font-medium">
+										{businessOwner.taxCode || (
+											<span className="text-muted-foreground">Chưa có</span>
+										)}
+									</p>
+								</div>
+							</div>
+							<Separator />
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<Briefcase className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">Loại hình</p>
+									<p className="font-medium">{businessOwner.businessType}</p>
+								</div>
+							</div>
+							<Separator />
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<Briefcase className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">Ngành nghề</p>
+									<p className="font-medium">{businessOwner.industry}</p>
+								</div>
+							</div>
+							<Separator />
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<Calendar className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">
+										Ngày thành lập
+									</p>
+									<p className="font-medium">
+										{formatDate(businessOwner.establishedDate)}
+									</p>
+								</div>
+							</div>
+							<Separator />
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<Users className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">Số nhân viên</p>
+									<p className="font-medium">{businessOwner.employeeCount}</p>
+								</div>
+							</div>
+							<Separator />
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<DollarSign className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">
+										Doanh thu hàng năm
+									</p>
+									<p className="font-medium">
+										{formatCurrency(businessOwner.annualRevenue)}
+									</p>
+								</div>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+
+				{/* Contact Info */}
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<User className="h-5 w-5" />
+							Thông tin chủ hộ & Liên hệ
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<User className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">Tên chủ hộ</p>
+									<p className="font-medium">
+										{businessOwner.userId?.name || "N/A"}
+									</p>
+								</div>
+							</div>
+							<Separator />
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<Mail className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">Email</p>
+									<p className="font-medium">
+										{businessOwner.userId?.email || "N/A"}
+									</p>
+								</div>
+							</div>
+							<Separator />
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<Phone className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">Số điện thoại</p>
+									<p className="font-medium">{businessOwner.phoneNumber}</p>
+								</div>
+							</div>
+							<Separator />
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<MapPin className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">Địa chỉ</p>
+									<p className="font-medium">
+										{businessOwner.address?.street && (
+											<>
+												{businessOwner.address.street}
+												<br />
+											</>
+										)}
+										{businessOwner.address?.ward && (
+											<>
+												{businessOwner.address.ward},{" "}
+												{businessOwner.address.district}
+												<br />
+											</>
+										)}
+										{businessOwner.address?.city}
+										{businessOwner.address?.zipCode && (
+											<> - {businessOwner.address.zipCode}</>
+										)}
+									</p>
+								</div>
+							</div>
+							<Separator />
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<Shield className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">
+										Trạng thái tài khoản
+									</p>
+									<Badge
+										variant={
+											businessOwner.userId?.isVerified ? "default" : "secondary"
+										}
+									>
+										{businessOwner.userId?.isVerified
+											? "Đã xác thực"
+											: "Chưa xác thực"}
+									</Badge>
+								</div>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+
+			{/* Tax Information */}
+			<Card>
+				<CardHeader>
+					<CardTitle className="flex items-center gap-2">
+						<FileText className="h-5 w-5" />
+						Thông tin thuế
+					</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="grid gap-6 md:grid-cols-3">
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<FileText className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">Loại thuế</p>
+									<p className="font-medium">
+										{businessOwner.taxType || (
+											<span className="text-muted-foreground">Chưa có</span>
+										)}
+									</p>
+								</div>
+							</div>
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<Calendar className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">Kỳ nộp thuế</p>
+									<p className="font-medium">
+										{getFilingFrequencyText(businessOwner.tax_filing_frequency)}
+									</p>
+								</div>
+							</div>
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-start gap-3">
+								<Calendar className="mt-1 h-4 w-4 text-muted-foreground" />
+								<div className="flex-1">
+									<p className="text-sm text-muted-foreground">Ngày xác minh</p>
+									<p className="font-medium">
+										{formatDate(businessOwner.verificationDate)}
+									</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+
+			{/* EasyInvoice Info */}
+			{businessOwner.easyInvoiceInfo && (
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<FileText className="h-5 w-5" />
+							Thông tin EasyInvoice
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="grid gap-6 md:grid-cols-4">
+							<div className="space-y-2">
+								<p className="text-sm text-muted-foreground">Tài khoản</p>
+								<p className="font-medium">
+									{businessOwner.easyInvoiceInfo.account || "N/A"}
+								</p>
+							</div>
+							<div className="space-y-2">
+								<p className="text-sm text-muted-foreground">Mật khẩu</p>
+								<p className="font-medium">
+									{businessOwner.easyInvoiceInfo.password ? "••••••••" : "N/A"}
+								</p>
+							</div>
+							<div className="space-y-2">
+								<p className="text-sm text-muted-foreground">MST</p>
+								<p className="font-medium">
+									{businessOwner.easyInvoiceInfo.mst || "N/A"}
+								</p>
+							</div>
+							<div className="space-y-2">
+								<p className="text-sm text-muted-foreground">Serial</p>
+								<p className="font-medium">
+									{businessOwner.easyInvoiceInfo.serial || "N/A"}
+								</p>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+			)}
+
+			{/* Documents */}
+			{businessOwner.documents && businessOwner.documents.length > 0 && (
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<FileText className="h-5 w-5" />
+							Tài liệu ({businessOwner.documents.length})
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<div className="space-y-2">
+							{businessOwner.documents.map((doc, index) => (
+								<div
+									key={index}
+									className="flex items-center justify-between rounded-lg border p-3"
+								>
+									<div className="flex items-center gap-3">
+										<FileText className="h-5 w-5 text-muted-foreground" />
+										<div>
+											<p className="font-medium">{doc.name}</p>
+											<p className="text-sm text-muted-foreground">
+												{doc.documentType} • Tải lên ngày{" "}
+												{formatDate(doc.uploadDate)}
+											</p>
+										</div>
+									</div>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => window.open(doc.url, "_blank")}
+									>
+										Xem
+									</Button>
+								</div>
+							))}
+						</div>
+					</CardContent>
+				</Card>
+			)}
+
+			{/* Notes */}
+			{businessOwner.notes && (
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<FileText className="h-5 w-5" />
+							Ghi chú
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<p className="text-sm">{businessOwner.notes}</p>
+					</CardContent>
+				</Card>
+			)}
+
+			{/* System Info */}
+			<Card>
+				<CardHeader>
+					<CardTitle className="flex items-center gap-2">
+						<Calendar className="h-5 w-5" />
+						Thông tin hệ thống
+					</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="grid gap-6 md:grid-cols-2">
+						<div className="space-y-2">
+							<p className="text-sm text-muted-foreground">Ngày tạo</p>
+							<p className="font-medium">
+								{formatDateTime(businessOwner.createdAt)}
+							</p>
+						</div>
+						<div className="space-y-2">
+							<p className="text-sm text-muted-foreground">Cập nhật lần cuối</p>
+							<p className="font-medium">
+								{formatDateTime(businessOwner.updatedAt)}
+							</p>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+		</div>
+	);
+}

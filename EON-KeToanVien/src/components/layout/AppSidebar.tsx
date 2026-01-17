@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
 	LayoutDashboard,
@@ -12,8 +11,10 @@ import {
 	LogOut,
 	ChevronLeft,
 	ChevronRight,
+	Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 const mainNavItems = [
 	{ title: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
@@ -29,8 +30,12 @@ const moduleNavItems = [
 	{ title: "Báo cáo", href: "/reports", icon: FileBarChart },
 ];
 
+const adminNavItems = [
+	{ title: "Quản lý hộ KD", href: "/admin/business-owners", icon: Shield },
+];
+
 export function AppSidebar() {
-	const [collapsed, setCollapsed] = useState(false);
+	const { collapsed, toggleCollapsed } = useSidebar();
 	const location = useLocation();
 
 	const isActive = (path: string) =>
@@ -57,7 +62,7 @@ export function AppSidebar() {
 						</div>
 					)}
 					<button
-						onClick={() => setCollapsed(!collapsed)}
+						onClick={toggleCollapsed}
 						className="rounded-lg p-1.5 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
 					>
 						{collapsed ? (
@@ -70,8 +75,7 @@ export function AppSidebar() {
 
 				{/* Navigation */}
 				<nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-					{/* Main Nav */}
-					<div className="space-y-1">
+					{/* <div className="space-y-1">
 						{!collapsed && (
 							<span className="px-3 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/50">
 								Chính
@@ -92,7 +96,6 @@ export function AppSidebar() {
 						))}
 					</div>
 
-					{/* Module Nav */}
 					<div className="mt-6 space-y-1">
 						{!collapsed && (
 							<span className="px-3 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/50">
@@ -100,6 +103,27 @@ export function AppSidebar() {
 							</span>
 						)}
 						{moduleNavItems.map((item) => (
+							<NavLink
+								key={item.href}
+								to={item.href}
+								className={cn(
+									"sidebar-item",
+									isActive(item.href) && "sidebar-item-active"
+								)}
+							>
+								<item.icon className="h-5 w-5 shrink-0" />
+								{!collapsed && <span>{item.title}</span>}
+							</NavLink>
+						))}
+					</div> */}
+
+					<div className="mt-6 space-y-1">
+						{!collapsed && (
+							<span className="px-3 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/50">
+								Quản trị
+							</span>
+						)}
+						{adminNavItems.map((item) => (
 							<NavLink
 								key={item.href}
 								to={item.href}
