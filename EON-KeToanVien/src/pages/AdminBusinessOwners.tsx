@@ -207,7 +207,7 @@ export default function AdminBusinessOwners() {
 								<p className="mt-1 text-2xl font-bold text-red-600">
 									{
 										businessOwners.filter(
-											(b) => b.businessStatus === "suspended"
+											(b) => b.businessStatus === "suspended",
 										).length
 									}
 								</p>
@@ -229,7 +229,7 @@ export default function AdminBusinessOwners() {
 								<p className="mt-1 text-2xl font-bold text-gray-600">
 									{
 										businessOwners.filter(
-											(b) => b.businessStatus === "inactive"
+											(b) => b.businessStatus === "inactive",
 										).length
 									}
 								</p>
@@ -289,7 +289,12 @@ export default function AdminBusinessOwners() {
 									{filteredBusinessOwners.map((owner) => (
 										<TableRow key={owner._id}>
 											<TableCell className="font-medium">
-												<div className="flex items-center gap-2">
+												<div
+													className="flex items-center gap-2 hover:underline cursor-pointer hover:text-primary"
+													onClick={() =>
+														navigate(`/admin/business-owners/${owner._id}`)
+													}
+												>
 													<Building2 className="h-4 w-4 text-muted-foreground" />
 													{owner.businessName}
 												</div>
@@ -368,7 +373,7 @@ export default function AdminBusinessOwners() {
 													(page) =>
 														page === 1 ||
 														page === pagination.pages ||
-														Math.abs(page - currentPage) <= 1
+														Math.abs(page - currentPage) <= 1,
 												)
 												.map((page, index, array) => (
 													<>
