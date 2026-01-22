@@ -1,6 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -49,6 +55,7 @@ import {
 	ShoppingCart,
 	Search,
 	ArrowUpDown,
+	Eye,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -88,6 +95,18 @@ export default function AdminBusinessOwnerDetail() {
 	const [productIsActive, setProductIsActive] = useState("");
 	const [productSortBy, setProductSortBy] = useState("createdAt");
 	const [productSortOrder, setProductSortOrder] = useState<1 | -1>(-1);
+
+	// Invoice detail modal
+	const [selectedInvoice, setSelectedInvoice] = useState<AdminInvoiceIn | null>(
+		null,
+	);
+	const [isInvoiceDetailOpen, setIsInvoiceDetailOpen] = useState(false);
+
+	// Output invoice detail modal
+	const [selectedOutputInvoice, setSelectedOutputInvoice] =
+		useState<AdminOutputInvoice | null>(null);
+	const [isOutputInvoiceDetailOpen, setIsOutputInvoiceDetailOpen] =
+		useState(false);
 
 	const {
 		data: response,
@@ -176,7 +195,7 @@ export default function AdminBusinessOwnerDetail() {
 					category: storageCategory,
 				}),
 			enabled: !!id,
-		}
+		},
 	);
 
 	const storageItems = storageItemsData?.data || [];
@@ -280,8 +299,8 @@ export default function AdminBusinessOwnerDetail() {
 		return frequency === 1
 			? "Theo quý"
 			: frequency === 2
-			? "Theo tháng"
-			: "N/A";
+				? "Theo tháng"
+				: "N/A";
 	};
 
 	const getCategoryText = (category: number) => {
@@ -635,7 +654,7 @@ export default function AdminBusinessOwnerDetail() {
 											</p>
 											<p className="font-medium">
 												{getFilingFrequencyText(
-													businessOwner.tax_filing_frequency
+													businessOwner.tax_filing_frequency,
 												)}
 											</p>
 										</div>
@@ -878,6 +897,7 @@ export default function AdminBusinessOwnerDetail() {
 												<TableHead className="text-right">Thuế GTGT</TableHead>
 												<TableHead className="text-right">Tổng cộng</TableHead>
 												<TableHead>Trạng thái</TableHead>
+												<TableHead className="text-right"></TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
@@ -910,6 +930,19 @@ export default function AdminBusinessOwnerDetail() {
 															{getInvoiceStatusText(invoice.tthai)}
 														</Badge>
 													</TableCell>
+													<TableCell className="text-right">
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => {
+																setSelectedInvoice(invoice);
+																setIsInvoiceDetailOpen(true);
+															}}
+														>
+															<Eye className="h-4 w-4 mr-1" />
+															Chi tiết
+														</Button>
+													</TableCell>
 												</TableRow>
 											))}
 										</TableBody>
@@ -922,7 +955,7 @@ export default function AdminBusinessOwnerDetail() {
 												Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{" "}
 												{Math.min(
 													currentPage * itemsPerPage,
-													invoicesPagination.total
+													invoicesPagination.total,
 												)}{" "}
 												trong tổng số {invoicesPagination.total} kết quả
 											</div>
@@ -939,13 +972,13 @@ export default function AdminBusinessOwnerDetail() {
 												<div className="flex items-center gap-1">
 													{Array.from(
 														{ length: invoicesPagination.pages },
-														(_, i) => i + 1
+														(_, i) => i + 1,
 													)
 														.filter(
 															(page) =>
 																page === 1 ||
 																page === invoicesPagination.pages ||
-																Math.abs(page - currentPage) <= 1
+																Math.abs(page - currentPage) <= 1,
 														)
 														.map((page, index, array) => (
 															<>
@@ -1084,6 +1117,7 @@ export default function AdminBusinessOwnerDetail() {
 												<TableHead className="text-right">Thuế TNCN</TableHead>
 												<TableHead className="text-right">Tổng cộng</TableHead>
 												<TableHead>Trạng thái</TableHead>
+												<TableHead className="text-right">Thao tác</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
@@ -1120,12 +1154,25 @@ export default function AdminBusinessOwnerDetail() {
 																invoice.tthai === "1"
 																	? 1
 																	: invoice.tthai === "2"
-																	? 2
-																	: invoice.tthai === "3"
-																	? 3
-																	: undefined
+																		? 2
+																		: invoice.tthai === "3"
+																			? 3
+																			: undefined,
 															)}
 														</Badge>
+													</TableCell>
+													<TableCell className="text-right">
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={() => {
+																setSelectedOutputInvoice(invoice);
+																setIsOutputInvoiceDetailOpen(true);
+															}}
+														>
+															<Eye className="h-4 w-4 mr-1" />
+															Chi tiết
+														</Button>
 													</TableCell>
 												</TableRow>
 											))}
@@ -1141,7 +1188,7 @@ export default function AdminBusinessOwnerDetail() {
 													-{" "}
 													{Math.min(
 														outputCurrentPage * itemsPerPage,
-														outputInvoicesPagination.total
+														outputInvoicesPagination.total,
 													)}{" "}
 													trong tổng số {outputInvoicesPagination.total} kết quả
 												</div>
@@ -1160,13 +1207,13 @@ export default function AdminBusinessOwnerDetail() {
 													<div className="flex items-center gap-1">
 														{Array.from(
 															{ length: outputInvoicesPagination.pages },
-															(_, i) => i + 1
+															(_, i) => i + 1,
 														)
 															.filter(
 																(page) =>
 																	page === 1 ||
 																	page === outputInvoicesPagination.pages ||
-																	Math.abs(page - outputCurrentPage) <= 1
+																	Math.abs(page - outputCurrentPage) <= 1,
 															)
 															.map((page, index, array) => (
 																<>
@@ -1369,7 +1416,7 @@ export default function AdminBusinessOwnerDetail() {
 													-{" "}
 													{Math.min(
 														storageCurrentPage * itemsPerPage,
-														storageItemsPagination.total
+														storageItemsPagination.total,
 													)}{" "}
 													trong tổng số {storageItemsPagination.total} kết quả
 												</div>
@@ -1388,13 +1435,13 @@ export default function AdminBusinessOwnerDetail() {
 													<div className="flex items-center gap-1">
 														{Array.from(
 															{ length: storageItemsPagination.pages },
-															(_, i) => i + 1
+															(_, i) => i + 1,
 														)
 															.filter(
 																(page) =>
 																	page === 1 ||
 																	page === storageItemsPagination.pages ||
-																	Math.abs(page - storageCurrentPage) <= 1
+																	Math.abs(page - storageCurrentPage) <= 1,
 															)
 															.map((page, index, array) => (
 																<>
@@ -1639,7 +1686,7 @@ export default function AdminBusinessOwnerDetail() {
 												Hiển thị {(productCurrentPage - 1) * itemsPerPage + 1} -{" "}
 												{Math.min(
 													productCurrentPage * itemsPerPage,
-													productsPagination.total
+													productsPagination.total,
 												)}{" "}
 												trong tổng số {productsPagination.total} kết quả
 											</div>
@@ -1658,13 +1705,13 @@ export default function AdminBusinessOwnerDetail() {
 												<div className="flex items-center gap-1">
 													{Array.from(
 														{ length: productsPagination.pages },
-														(_, i) => i + 1
+														(_, i) => i + 1,
 													)
 														.filter(
 															(page) =>
 																page === 1 ||
 																page === productsPagination.pages ||
-																Math.abs(page - productCurrentPage) <= 1
+																Math.abs(page - productCurrentPage) <= 1,
 														)
 														.map((page, index, array) => (
 															<>
@@ -1713,6 +1760,571 @@ export default function AdminBusinessOwnerDetail() {
 					</Card>
 				</TabsContent>
 			</Tabs>
+
+			{/* Invoice Detail Dialog */}
+			<Dialog open={isInvoiceDetailOpen} onOpenChange={setIsInvoiceDetailOpen}>
+				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Chi tiết hóa đơn mua vào</DialogTitle>
+					</DialogHeader>
+					{selectedInvoice && (
+						<div className="space-y-6">
+							{/* Thông tin chung */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg">Thông tin hóa đơn</CardTitle>
+								</CardHeader>
+								<CardContent className="grid grid-cols-2 gap-4">
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Ký hiệu hóa đơn
+										</p>
+										<p className="font-medium">
+											{selectedInvoice.khhdon || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Số hóa đơn</p>
+										<p className="font-medium">
+											{selectedInvoice.shdon || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Mã hóa đơn</p>
+										<p className="font-medium">
+											{selectedInvoice.mhdon || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Ngày lập</p>
+										<p className="font-medium">
+											{formatDate(selectedInvoice.tdlap)}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Hình thức hóa đơn
+										</p>
+										<p className="font-medium">
+											{selectedInvoice.hthdon === 1
+												? "Hóa đơn điện tử"
+												: selectedInvoice.hthdon === 2
+													? "Hóa đơn giấy"
+													: "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Trạng thái</p>
+										<Badge
+											variant={
+												selectedInvoice.tthai === 1 ? "default" : "secondary"
+											}
+										>
+											{getInvoiceStatusText(selectedInvoice.tthai)}
+										</Badge>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Thông tin người bán */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg">Thông tin người bán</CardTitle>
+								</CardHeader>
+								<CardContent className="grid grid-cols-2 gap-4">
+									<div className="col-span-2">
+										<p className="text-sm text-muted-foreground">
+											Tên người bán
+										</p>
+										<p className="font-medium">
+											{selectedInvoice.nbten || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Mã số thuế</p>
+										<p className="font-medium">
+											{selectedInvoice.nbmst || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Số điện thoại
+										</p>
+										<p className="font-medium">
+											{selectedInvoice.nbsdthoai || "N/A"}
+										</p>
+									</div>
+									<div className="col-span-2">
+										<p className="text-sm text-muted-foreground">Địa chỉ</p>
+										<p className="font-medium">
+											{selectedInvoice.nbdchi || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Email</p>
+										<p className="font-medium">
+											{selectedInvoice.nbdctdtu || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Website</p>
+										<p className="font-medium">
+											{selectedInvoice.nbwebsite || "N/A"}
+										</p>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Thông tin người mua */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg">Thông tin người mua</CardTitle>
+								</CardHeader>
+								<CardContent className="grid grid-cols-2 gap-4">
+									<div className="col-span-2">
+										<p className="text-sm text-muted-foreground">
+											Tên người mua
+										</p>
+										<p className="font-medium">
+											{selectedInvoice.nmten || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Mã số thuế</p>
+										<p className="font-medium">
+											{selectedInvoice.nmmst || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Số điện thoại
+										</p>
+										<p className="font-medium">
+											{selectedInvoice.nmsdthoai || "N/A"}
+										</p>
+									</div>
+									<div className="col-span-2">
+										<p className="text-sm text-muted-foreground">Địa chỉ</p>
+										<p className="font-medium">
+											{selectedInvoice.nmdchi || "N/A"}
+										</p>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Thông tin thanh toán */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg">
+										Thông tin thanh toán
+									</CardTitle>
+								</CardHeader>
+								<CardContent className="grid grid-cols-2 gap-4">
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Tổng tiền chưa thuế
+										</p>
+										<p className="font-medium text-lg">
+											{formatCurrency(selectedInvoice.tgtcthue)}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Tổng thuế GTGT
+										</p>
+										<p className="font-medium text-lg">
+											{formatCurrency(selectedInvoice.tgtthue)}
+										</p>
+									</div>
+									<div className="col-span-2">
+										<p className="text-sm text-muted-foreground">
+											Tổng tiền thanh toán
+										</p>
+										<p className="font-bold text-xl text-primary">
+											{formatCurrency(selectedInvoice.tgtttbso)}
+										</p>
+									</div>
+									<div className="col-span-2">
+										<p className="text-sm text-muted-foreground">
+											Số tiền bằng chữ
+										</p>
+										<p className="font-medium">
+											{selectedInvoice.tgtttbchu || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Hình thức thanh toán
+										</p>
+										<p className="font-medium">
+											{selectedInvoice.htttoan || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Đơn vị tiền tệ
+										</p>
+										<p className="font-medium">
+											{selectedInvoice.dvtte || "VND"}
+										</p>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Danh sách hàng hóa dịch vụ */}
+							{selectedInvoice.hdhhdvu &&
+								selectedInvoice.hdhhdvu.length > 0 && (
+									<Card>
+										<CardHeader>
+											<CardTitle className="text-lg">
+												Danh sách hàng hóa / dịch vụ
+											</CardTitle>
+										</CardHeader>
+										<CardContent>
+											<Table>
+												<TableHeader>
+													<TableRow>
+														<TableHead>STT</TableHead>
+														<TableHead>Tên hàng hóa / dịch vụ</TableHead>
+														<TableHead>Đơn vị</TableHead>
+														<TableHead className="text-right">
+															Số lượng
+														</TableHead>
+														<TableHead className="text-right">
+															Đơn giá
+														</TableHead>
+														<TableHead className="text-right">
+															Thành tiền
+														</TableHead>
+														<TableHead className="text-right">
+															Thuế suất
+														</TableHead>
+														<TableHead className="text-right">
+															Tiền thuế
+														</TableHead>
+													</TableRow>
+												</TableHeader>
+												<TableBody>
+													{selectedInvoice.hdhhdvu.map(
+														(item: any, index: number) => (
+															<TableRow key={index}>
+																<TableCell>{item.stt || index + 1}</TableCell>
+																<TableCell className="max-w-[300px]">
+																	{item.ten || "N/A"}
+																</TableCell>
+																<TableCell>{item.dvtinh || "N/A"}</TableCell>
+																<TableCell className="text-right">
+																	{item.sluong?.toLocaleString("vi-VN") || "0"}
+																</TableCell>
+																<TableCell className="text-right">
+																	{formatCurrency(item.dgia)}
+																</TableCell>
+																<TableCell className="text-right">
+																	{formatCurrency(item.thtien)}
+																</TableCell>
+																<TableCell className="text-right">
+																	{item.tsuat ? `${item.tsuat}%` : "N/A"}
+																</TableCell>
+																<TableCell className="text-right">
+																	{formatCurrency(item.tthue)}
+																</TableCell>
+															</TableRow>
+														),
+													)}
+												</TableBody>
+											</Table>
+										</CardContent>
+									</Card>
+								)}
+
+							{/* Ghi chú */}
+							{selectedInvoice.gchu && (
+								<Card>
+									<CardHeader>
+										<CardTitle className="text-lg">Ghi chú</CardTitle>
+									</CardHeader>
+									<CardContent>
+										<p className="text-sm">{selectedInvoice.gchu}</p>
+									</CardContent>
+								</Card>
+							)}
+						</div>
+					)}
+				</DialogContent>
+			</Dialog>
+
+			{/* Output Invoice Detail Dialog */}
+			<Dialog
+				open={isOutputInvoiceDetailOpen}
+				onOpenChange={setIsOutputInvoiceDetailOpen}
+			>
+				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Chi tiết hóa đơn bán ra</DialogTitle>
+					</DialogHeader>
+					{selectedOutputInvoice && (
+						<div className="space-y-6">
+							{/* Thông tin chung */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg">Thông tin hóa đơn</CardTitle>
+								</CardHeader>
+								<CardContent className="grid grid-cols-2 gap-4">
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Ký hiệu hóa đơn
+										</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.khhdon || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Số hóa đơn</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.shdon || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Mẫu hóa đơn</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.mhdon || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Thời điểm lập
+										</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.tdlap
+												? new Date(selectedOutputInvoice.tdlap).toLocaleString(
+														"vi-VN",
+													)
+												: "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Hình thức hóa đơn
+										</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.hthdon || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Trạng thái</p>
+										<Badge
+											variant={
+												selectedOutputInvoice.tthai === "1"
+													? "default"
+													: "secondary"
+											}
+										>
+											{getInvoiceStatusText(
+												selectedOutputInvoice.tthai === "1"
+													? 1
+													: selectedOutputInvoice.tthai === "2"
+														? 2
+														: selectedOutputInvoice.tthai === "3"
+															? 3
+															: undefined,
+											)}
+										</Badge>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Thông tin người bán */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg">Thông tin người bán</CardTitle>
+								</CardHeader>
+								<CardContent className="space-y-4">
+									<div>
+										<p className="text-sm text-muted-foreground">Tên</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.nbten || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Mã số thuế</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.nbmst || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Địa chỉ</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.nbdchi || "N/A"}
+										</p>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Thông tin người mua */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg">Thông tin người mua</CardTitle>
+								</CardHeader>
+								<CardContent className="space-y-4">
+									<div>
+										<p className="text-sm text-muted-foreground">Tên</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.nmten || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Mã số thuế</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.nmmst || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">Địa chỉ</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.nmdchi || "N/A"}
+										</p>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Thông tin thanh toán */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg">
+										Thông tin thanh toán
+									</CardTitle>
+								</CardHeader>
+								<CardContent className="grid grid-cols-2 gap-4">
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Tổng tiền (số)
+										</p>
+										<p className="font-medium text-lg">
+											{formatCurrency(
+												Number(selectedOutputInvoice.tgtttbso) || 0,
+											)}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Tổng thuế GTGT
+										</p>
+										<p className="font-medium text-lg">
+											{formatCurrency(
+												Number(selectedOutputInvoice.totalGTGT) || 0,
+											)}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Tổng thuế TNCN
+										</p>
+										<p className="font-medium text-lg">
+											{formatCurrency(
+												Number(selectedOutputInvoice.totalTNCN) || 0,
+											)}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Tổng tiền (chữ)
+										</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.tgtttbchu || "N/A"}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm text-muted-foreground">
+											Hình thức thanh toán
+										</p>
+										<p className="font-medium">
+											{selectedOutputInvoice.hthdon || "N/A"}
+										</p>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Danh sách hàng hóa/dịch vụ */}
+							{selectedOutputInvoice.hdhhdvu &&
+								selectedOutputInvoice.hdhhdvu.length > 0 && (
+									<Card>
+										<CardHeader>
+											<CardTitle className="text-lg">
+												Danh sách hàng hóa/dịch vụ
+											</CardTitle>
+										</CardHeader>
+										<CardContent>
+											<Table>
+												<TableHeader>
+													<TableRow>
+														<TableHead>STT</TableHead>
+														<TableHead>Tên hàng hóa/dịch vụ</TableHead>
+														<TableHead>Đơn vị tính</TableHead>
+														<TableHead className="text-right">
+															Số lượng
+														</TableHead>
+														<TableHead className="text-right">
+															Đơn giá
+														</TableHead>
+														<TableHead className="text-right">
+															Thành tiền
+														</TableHead>
+														<TableHead className="text-right">
+															Thuế GTGT
+														</TableHead>
+														<TableHead className="text-right">
+															Thuế TNCN
+														</TableHead>
+													</TableRow>
+												</TableHeader>
+												<TableBody>
+													{selectedOutputInvoice.hdhhdvu.map(
+														(item: any, index: number) => (
+															<TableRow key={index}>
+																<TableCell>{item.stt || index + 1}</TableCell>
+																<TableCell className="max-w-[300px]">
+																	{item.ten || "N/A"}
+																</TableCell>
+																<TableCell>{item.dvtinh || "N/A"}</TableCell>
+																<TableCell className="text-right">
+																	{item.sluong?.toLocaleString("vi-VN") || "0"}
+																</TableCell>
+																<TableCell className="text-right">
+																	{formatCurrency(Number(item.dgia) || 0)}
+																</TableCell>
+																<TableCell className="text-right">
+																	{formatCurrency(Number(item.thtien) || 0)}
+																</TableCell>
+																<TableCell className="text-right">
+																	{formatCurrency(Number(item.gtgt) || 0)}
+																</TableCell>
+																<TableCell className="text-right">
+																	{formatCurrency(Number(item.tncn) || 0)}
+																</TableCell>
+															</TableRow>
+														),
+													)}
+												</TableBody>
+											</Table>
+										</CardContent>
+									</Card>
+								)}
+
+							{/* Ghi chú */}
+							{selectedOutputInvoice.gchu && (
+								<Card>
+									<CardHeader>
+										<CardTitle className="text-lg">Ghi chú</CardTitle>
+									</CardHeader>
+									<CardContent>
+										<p className="text-sm">{selectedOutputInvoice.gchu}</p>
+									</CardContent>
+								</Card>
+							)}
+						</div>
+					)}
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
