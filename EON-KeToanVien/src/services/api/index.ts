@@ -38,4 +38,5 @@ export type {
 	PaginationParams,
 	PaginatedResponse,
 	SystemStats,
+	TaxStatistics,
 } from "./admin.api";

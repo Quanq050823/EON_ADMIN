@@ -32,6 +32,7 @@ import {
 	type AdminOutputInvoice,
 	type AdminStorageItem,
 	type AdminProduct,
+	type TaxStatistics,
 } from "@/services/api";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -107,6 +108,16 @@ export default function AdminBusinessOwnerDetail() {
 		useState<AdminOutputInvoice | null>(null);
 	const [isOutputInvoiceDetailOpen, setIsOutputInvoiceDetailOpen] =
 		useState(false);
+
+	// Tax statistics filters
+	const currentYear = new Date().getFullYear();
+	const currentMonth = new Date().getMonth() + 1;
+	const [taxPeriod, setTaxPeriod] = useState<"month" | "quarter" | "year">(
+		"month",
+	);
+	const [taxYear, setTaxYear] = useState(currentYear);
+	const [taxMonth, setTaxMonth] = useState(currentMonth);
+	const [taxQuarter, setTaxQuarter] = useState(Math.ceil(currentMonth / 3));
 
 	const {
 		data: response,
@@ -228,6 +239,27 @@ export default function AdminBusinessOwnerDetail() {
 
 	const products = productsData?.data || [];
 	const productsPagination = productsData?.pagination;
+
+	// Tax statistics query
+	const { data: taxStatsData, isLoading: isLoadingTaxStats } = useQuery({
+		queryKey: [
+			"admin-tax-statistics",
+			id,
+			taxPeriod,
+			taxYear,
+			taxMonth,
+			taxQuarter,
+		],
+		queryFn: () => {
+			const params: any = { period: taxPeriod, year: taxYear };
+			if (taxPeriod === "month") params.month = taxMonth;
+			if (taxPeriod === "quarter") params.quarter = taxQuarter;
+			return adminApi.getTaxStatisticsByBusinessOwner(id!, params);
+		},
+		enabled: !!id,
+	});
+
+	const taxStats = taxStatsData?.data;
 
 	const formatDate = (dateString?: string) => {
 		if (!dateString) return "N/A";
@@ -401,6 +433,7 @@ export default function AdminBusinessOwnerDetail() {
 			<Tabs defaultValue="info" className="w-full">
 				<TabsList>
 					<TabsTrigger value="info">Thông tin</TabsTrigger>
+					<TabsTrigger value="tax">Thống kê thuế</TabsTrigger>
 					<TabsTrigger value="invoices">
 						Hóa đơn mua vào ({invoicesPagination?.total || 0})
 					</TabsTrigger>
@@ -798,6 +831,287 @@ export default function AdminBusinessOwnerDetail() {
 									</p>
 								</div>
 							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				{/* Tax Statistics Tab */}
+				<TabsContent value="tax" className="space-y-6 mt-6">
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<DollarSign className="h-5 w-5" />
+								Thống kê thuế
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="p-6">
+							{/* Filters */}
+							<div className="flex flex-col gap-4 mb-6">
+								<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+									{/* Period Type */}
+									<div>
+										<label className="text-sm font-medium mb-2 block">
+											Loại kỳ
+										</label>
+										<Select
+											value={taxPeriod}
+											onValueChange={(value: "month" | "quarter" | "year") =>
+												setTaxPeriod(value)
+											}
+										>
+											<SelectTrigger>
+												<SelectValue placeholder="Chọn kỳ" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="month">Theo tháng</SelectItem>
+												<SelectItem value="quarter">Theo quý</SelectItem>
+												<SelectItem value="year">Theo năm</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
+
+									{/* Year */}
+									<div>
+										<label className="text-sm font-medium mb-2 block">
+											Năm
+										</label>
+										<Select
+											value={taxYear.toString()}
+											onValueChange={(value) => setTaxYear(Number(value))}
+										>
+											<SelectTrigger>
+												<SelectValue placeholder="Chọn năm" />
+											</SelectTrigger>
+											<SelectContent>
+												{Array.from(
+													{ length: 5 },
+													(_, i) => currentYear - i,
+												).map((year) => (
+													<SelectItem key={year} value={year.toString()}>
+														{year}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+
+									{/* Month (conditional) */}
+									{taxPeriod === "month" && (
+										<div>
+											<label className="text-sm font-medium mb-2 block">
+												Tháng
+											</label>
+											<Select
+												value={taxMonth.toString()}
+												onValueChange={(value) => setTaxMonth(Number(value))}
+											>
+												<SelectTrigger>
+													<SelectValue placeholder="Chọn tháng" />
+												</SelectTrigger>
+												<SelectContent>
+													{Array.from({ length: 12 }, (_, i) => i + 1).map(
+														(month) => (
+															<SelectItem key={month} value={month.toString()}>
+																Tháng {month}
+															</SelectItem>
+														),
+													)}
+												</SelectContent>
+											</Select>
+										</div>
+									)}
+
+									{/* Quarter (conditional) */}
+									{taxPeriod === "quarter" && (
+										<div>
+											<label className="text-sm font-medium mb-2 block">
+												Quý
+											</label>
+											<Select
+												value={taxQuarter.toString()}
+												onValueChange={(value) => setTaxQuarter(Number(value))}
+											>
+												<SelectTrigger>
+													<SelectValue placeholder="Chọn quý" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="1">Quý 1</SelectItem>
+													<SelectItem value="2">Quý 2</SelectItem>
+													<SelectItem value="3">Quý 3</SelectItem>
+													<SelectItem value="4">Quý 4</SelectItem>
+												</SelectContent>
+											</Select>
+										</div>
+									)}
+								</div>
+							</div>
+
+							{/* Statistics Cards */}
+							{isLoadingTaxStats ? (
+								<div className="text-center py-12">
+									<p className="text-muted-foreground">Đang tải...</p>
+								</div>
+							) : taxStats ? (
+								<div className="space-y-6">
+									{/* Period Info */}
+									<Card className="bg-muted/50">
+										<CardContent className="p-4">
+											<div className="flex items-center justify-between">
+												<div>
+													<p className="text-sm text-muted-foreground">
+														Kỳ thống kê
+													</p>
+													<p className="font-medium">
+														{taxPeriod === "month" &&
+															`Tháng ${taxMonth}/${taxYear}`}
+														{taxPeriod === "quarter" &&
+															`Quý ${taxQuarter}/${taxYear}`}
+														{taxPeriod === "year" && `Năm ${taxYear}`}
+													</p>
+												</div>
+												<div className="text-right">
+													<p className="text-sm text-muted-foreground">
+														Số hóa đơn
+													</p>
+													<p className="font-medium text-lg">
+														{taxStats.statistics.invoiceCount}
+													</p>
+												</div>
+											</div>
+										</CardContent>
+									</Card>
+
+									{/* Tax Summary Grid */}
+									<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+										{/* Total Revenue */}
+										<Card>
+											<CardHeader className="pb-3">
+												<CardTitle className="text-sm font-medium text-muted-foreground">
+													Tổng doanh thu
+												</CardTitle>
+											</CardHeader>
+											<CardContent>
+												<p className="text-2xl font-bold text-blue-600">
+													{formatCurrency(taxStats.statistics.totalRevenue)}
+												</p>
+											</CardContent>
+										</Card>
+
+										{/* GTGT Tax */}
+										<Card>
+											<CardHeader className="pb-3">
+												<CardTitle className="text-sm font-medium text-muted-foreground">
+													Thuế GTGT
+												</CardTitle>
+											</CardHeader>
+											<CardContent>
+												<p className="text-2xl font-bold text-green-600">
+													{formatCurrency(taxStats.statistics.totalGTGT)}
+												</p>
+											</CardContent>
+										</Card>
+
+										{/* TNCN Tax */}
+										<Card>
+											<CardHeader className="pb-3">
+												<CardTitle className="text-sm font-medium text-muted-foreground">
+													Thuế TNCN
+												</CardTitle>
+											</CardHeader>
+											<CardContent>
+												<p className="text-2xl font-bold text-orange-600">
+													{formatCurrency(taxStats.statistics.totalTNCN)}
+												</p>
+											</CardContent>
+										</Card>
+
+										{/* Total Tax */}
+										<Card className="border-2 border-primary">
+											<CardHeader className="pb-3">
+												<CardTitle className="text-sm font-medium text-muted-foreground">
+													Tổng thuế cần đóng
+												</CardTitle>
+											</CardHeader>
+											<CardContent>
+												<p className="text-2xl font-bold text-primary">
+													{formatCurrency(taxStats.statistics.totalTax)}
+												</p>
+											</CardContent>
+										</Card>
+									</div>
+
+									{/* Detailed Breakdown */}
+									<Card>
+										<CardHeader>
+											<CardTitle className="text-lg">Chi tiết thuế</CardTitle>
+										</CardHeader>
+										<CardContent>
+											<Table>
+												<TableHeader>
+													<TableRow>
+														<TableHead>Loại thuế</TableHead>
+														<TableHead className="text-right">
+															Số tiền
+														</TableHead>
+														<TableHead className="text-right">Tỷ lệ</TableHead>
+													</TableRow>
+												</TableHeader>
+												<TableBody>
+													<TableRow>
+														<TableCell className="font-medium">
+															Thuế GTGT
+														</TableCell>
+														<TableCell className="text-right">
+															{formatCurrency(taxStats.statistics.totalGTGT)}
+														</TableCell>
+														<TableCell className="text-right">
+															{taxStats.statistics.totalTax > 0
+																? (
+																		(taxStats.statistics.totalGTGT /
+																			taxStats.statistics.totalTax) *
+																		100
+																	).toFixed(2)
+																: "0.00"}
+															%
+														</TableCell>
+													</TableRow>
+													<TableRow>
+														<TableCell className="font-medium">
+															Thuế TNCN
+														</TableCell>
+														<TableCell className="text-right">
+															{formatCurrency(taxStats.statistics.totalTNCN)}
+														</TableCell>
+														<TableCell className="text-right">
+															{taxStats.statistics.totalTax > 0
+																? (
+																		(taxStats.statistics.totalTNCN /
+																			taxStats.statistics.totalTax) *
+																		100
+																	).toFixed(2)
+																: "0.00"}
+															%
+														</TableCell>
+													</TableRow>
+													<TableRow className="bg-muted/50 font-bold">
+														<TableCell>Tổng cộng</TableCell>
+														<TableCell className="text-right">
+															{formatCurrency(taxStats.statistics.totalTax)}
+														</TableCell>
+														<TableCell className="text-right">
+															100.00%
+														</TableCell>
+													</TableRow>
+												</TableBody>
+											</Table>
+										</CardContent>
+									</Card>
+								</div>
+							) : (
+								<div className="text-center py-12">
+									<p className="text-muted-foreground">Không có dữ liệu</p>
+								</div>
+							)}
 						</CardContent>
 					</Card>
 				</TabsContent>
@@ -2095,8 +2409,8 @@ export default function AdminBusinessOwnerDetail() {
 											Thời điểm lập
 										</p>
 										<p className="font-medium">
-											{selectedOutputInvoice.tdlap
-												? new Date(selectedOutputInvoice.tdlap).toLocaleString(
+											{selectedOutputInvoice.ncnhat
+												? new Date(selectedOutputInvoice.ncnhat).toLocaleString(
 														"vi-VN",
 													)
 												: "N/A"}

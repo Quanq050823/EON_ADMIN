@@ -111,17 +111,26 @@ export interface AdminInvoiceIn {
 	shdon?: number;
 	nbten?: string;
 	nbdchi?: string;
+	nbsdthoai?: string;
+	nbdctdtu?: string;
+	nbwebsite?: string;
 	nmmst?: string;
 	nmten?: string;
 	nmdchi?: string;
+	nmsdthoai?: string;
 	tdlap?: string;
 	tgtttbso?: number;
 	tgtcthue?: number;
 	tgtthue?: number;
+	tgtttbchu?: string;
+	htttoan?: string;
+	dvtte?: string;
 	mhdon?: string;
 	thdon?: string;
 	tthai?: number;
 	hthdon?: number;
+	hdhhdvu?: any[];
+	gchu?: string;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -142,14 +151,36 @@ export interface AdminOutputInvoice {
 	tgtttbso?: string;
 	tgtcthue?: string;
 	tgtthue?: string;
+	tgtttbchu?: string;
 	mhdon?: string;
 	thdon?: string;
+	ncnhat?: string;
 	tthai?: string;
 	hthdon?: string;
 	totalGTGT?: number;
 	totalTNCN?: number;
+	hdhhdvu?: any[];
+	gchu?: string;
 	createdAt: string;
 	updatedAt: string;
+}
+
+export interface TaxStatistics {
+	period: {
+		type: "month" | "quarter" | "year";
+		year: number;
+		month?: number;
+		quarter?: number;
+		startDate: string;
+		endDate: string;
+	};
+	statistics: {
+		totalGTGT: number;
+		totalTNCN: number;
+		totalTax: number;
+		totalRevenue: number;
+		invoiceCount: number;
+	};
 }
 
 export interface AdminStorageItem {
@@ -210,14 +241,14 @@ export const adminApi = {
 			role?: string;
 			isVerified?: boolean;
 			userType?: number;
-		}
+		},
 	): Promise<PaginatedResponse<AdminUser>> => {
 		const response = await axiosInstance.get("/admin/users", { params });
 		return response.data;
 	},
 
 	getUserById: async (
-		userId: string
+		userId: string,
 	): Promise<{ success: boolean; data: AdminUser }> => {
 		const response = await axiosInstance.get(`/admin/users/${userId}`);
 		return response.data;
@@ -236,14 +267,14 @@ export const adminApi = {
 
 	updateUser: async (
 		userId: string,
-		data: Partial<AdminUser>
+		data: Partial<AdminUser>,
 	): Promise<{ success: boolean; data: AdminUser }> => {
 		const response = await axiosInstance.put(`/admin/users/${userId}`, data);
 		return response.data;
 	},
 
 	deleteUser: async (
-		userId: string
+		userId: string,
 	): Promise<{ success: boolean; message: string }> => {
 		const response = await axiosInstance.delete(`/admin/users/${userId}`);
 		return response.data;
@@ -251,7 +282,7 @@ export const adminApi = {
 
 	updateUserRole: async (
 		userId: string,
-		role: string
+		role: string,
 	): Promise<{ success: boolean; data: AdminUser }> => {
 		const response = await axiosInstance.patch(`/admin/users/${userId}/role`, {
 			role,
@@ -261,7 +292,7 @@ export const adminApi = {
 
 	// Business Owner Management
 	getAllBusinessOwners: async (
-		params?: PaginationParams
+		params?: PaginationParams,
 	): Promise<PaginatedResponse<AdminBusinessOwner>> => {
 		const response = await axiosInstance.get("/admin/business-owners", {
 			params,
@@ -270,43 +301,43 @@ export const adminApi = {
 	},
 
 	getBusinessOwnerById: async (
-		ownerId: string
+		ownerId: string,
 	): Promise<{ success: boolean; data: AdminBusinessOwner }> => {
 		const response = await axiosInstance.get(
-			`/admin/business-owners/${ownerId}`
+			`/admin/business-owners/${ownerId}`,
 		);
 		return response.data;
 	},
 
 	getInvoicesInByBusinessOwner: async (
 		ownerId: string,
-		params?: PaginationParams & { search?: string; status?: string }
+		params?: PaginationParams & { search?: string; status?: string },
 	): Promise<PaginatedResponse<AdminInvoiceIn>> => {
 		const response = await axiosInstance.get(
 			`/admin/business-owners/${ownerId}/invoices-in`,
-			{ params }
+			{ params },
 		);
 		return response.data;
 	},
 
 	getOutputInvoicesByBusinessOwner: async (
 		ownerId: string,
-		params?: PaginationParams & { search?: string; status?: string }
+		params?: PaginationParams & { search?: string; status?: string },
 	): Promise<PaginatedResponse<AdminOutputInvoice>> => {
 		const response = await axiosInstance.get(
 			`/admin/business-owners/${ownerId}/output-invoices`,
-			{ params }
+			{ params },
 		);
 		return response.data;
 	},
 
 	getStorageItemsByBusinessOwner: async (
 		ownerId: string,
-		params?: PaginationParams & { search?: string; category?: string }
+		params?: PaginationParams & { search?: string; category?: string },
 	): Promise<PaginatedResponse<AdminStorageItem>> => {
 		const response = await axiosInstance.get(
 			`/admin/business-owners/${ownerId}/storage-items`,
-			{ params }
+			{ params },
 		);
 		return response.data;
 	},
@@ -317,28 +348,28 @@ export const adminApi = {
 			search?: string;
 			category?: string;
 			isActive?: string;
-		}
+		},
 	): Promise<PaginatedResponse<AdminProduct>> => {
 		const response = await axiosInstance.get(
 			`/admin/business-owners/${ownerId}/products`,
-			{ params }
+			{ params },
 		);
 		return response.data;
 	},
 
 	// Accountant Management
 	getAllAccountants: async (
-		params?: PaginationParams
+		params?: PaginationParams,
 	): Promise<PaginatedResponse<AdminAccountant>> => {
 		const response = await axiosInstance.get("/admin/accountants", { params });
 		return response.data;
 	},
 
 	getAccountantById: async (
-		accountantId: string
+		accountantId: string,
 	): Promise<{ success: boolean; data: AdminAccountant }> => {
 		const response = await axiosInstance.get(
-			`/admin/accountants/${accountantId}`
+			`/admin/accountants/${accountantId}`,
 		);
 		return response.data;
 	},
@@ -359,6 +390,23 @@ export const adminApi = {
 
 	getInvoiceStats: async (): Promise<{ success: boolean; data: any }> => {
 		const response = await axiosInstance.get("/admin/stats/invoices");
+		return response.data;
+	},
+
+	// Tax Statistics
+	getTaxStatisticsByBusinessOwner: async (
+		ownerId: string,
+		params?: {
+			period?: "month" | "quarter" | "year";
+			year?: number;
+			month?: number;
+			quarter?: number;
+		},
+	): Promise<{ success: boolean; data: TaxStatistics }> => {
+		const response = await axiosInstance.get(
+			`/admin/business-owners/${ownerId}/tax-statistics`,
+			{ params },
+		);
 		return response.data;
 	},
 };
