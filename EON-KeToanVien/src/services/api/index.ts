@@ -24,7 +24,13 @@ export type { BusinessOwner, CreateBusinessOwnerData } from "./business.api";
 export type { Accountant, CreateAccountantData } from "./accountant.api";
 export type { Product, CreateProductData } from "./product.api";
 export type { Customer, CreateCustomerData } from "./customer.api";
-export type { OutputInvoice, CreateOutputInvoiceData } from "./invoice.api";
+export type {
+	OutputInvoice,
+	CreateOutputInvoiceData,
+	EasyInvoiceItem,
+	EasyInvoiceResponse,
+	GetInvoiceAutoResponse,
+} from "./invoice.api";
 export type { ExpenseVoucher, CreateExpenseVoucherData } from "./expense.api";
 export type { TaxSubmission, CreateTaxSubmissionData } from "./tax.api";
 export type {
@@ -39,4 +45,6 @@ export type {
 	PaginatedResponse,
 	SystemStats,
 	TaxStatistics,
+	ViewInvoiceData,
+	ViewInvoiceResponse,
 } from "./admin.api";

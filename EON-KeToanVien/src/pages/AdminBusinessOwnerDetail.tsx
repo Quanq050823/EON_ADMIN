@@ -428,6 +428,13 @@ export default function AdminBusinessOwnerDetail() {
 					{getStatusBadge(businessOwner.businessStatus)}
 				</div>
 			</div>
+			<Button
+				variant="outline"
+				onClick={() => navigate(`/admin/business-owners/${id}/easy-invoices`)}
+			>
+				<FileText className="h-4 w-4 mr-2" />
+				EasyInvoice
+			</Button>
 
 			{/* Tabs */}
 			<Tabs defaultValue="info" className="w-full">

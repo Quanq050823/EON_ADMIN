@@ -18,6 +18,7 @@ import Reports from "./pages/Reports";
 import AdminBusinessOwners from "./pages/AdminBusinessOwners";
 import AdminBusinessOwnerDetail from "./pages/AdminBusinessOwnerDetail";
 import NotFound from "./pages/NotFound";
+import AdminEasyInvoices from "./pages/AdminEasyInvoices";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,10 @@ const App = () => (
 						<Route
 							path="/admin/business-owners/:id"
 							element={<AdminBusinessOwnerDetail />}
+						/>
+						<Route
+							path="/admin/business-owners/:id/easy-invoices"
+							element={<AdminEasyInvoices />}
 						/>
 					</Route>
 

@@ -183,6 +183,44 @@ export interface TaxStatistics {
 	};
 }
 
+export interface ViewInvoiceData {
+	Html: string;
+	InvoiceStatus: number;
+	Buyer: string | null;
+	TaxAmount: number;
+	PublishedBy: string;
+	Type: number;
+	Pattern: string;
+	Serial: string;
+	No: string;
+	Ikey: string;
+	ArisingDate: string;
+	IssueDate: string;
+	CustomerName: string;
+	CustomerAddress: string;
+	CustomerCode: string;
+	CustomerTaxCode: string;
+	Total: number;
+	Amount: number;
+	LookupCode: string;
+	LinkView: string | null;
+	ModifiedDate: string;
+	IsSentTCTSummary: boolean;
+	TCTCheckStatus: string;
+	TCTErrorMessage: string | null;
+	TaxAuthorityCode: string;
+	CusIdentification: string | null;
+	BudgetaryRelationshipCode: string | null;
+	PassportNo: string | null;
+}
+
+export interface ViewInvoiceResponse {
+	Status: number;
+	Message: string;
+	Data: ViewInvoiceData;
+	ErrorCode: number;
+}
+
 export interface AdminStorageItem {
 	_id: string;
 	businessOwnerId: string;
@@ -406,6 +444,30 @@ export const adminApi = {
 		const response = await axiosInstance.get(
 			`/admin/business-owners/${ownerId}/tax-statistics`,
 			{ params },
+		);
+		return response.data;
+	},
+
+	// EasyInvoice Management
+	getEasyInvoicesByBusinessOwner: async (ownerId: string) => {
+		const response = await axiosInstance.get(
+			`/admin/business-owners/${ownerId}/easy-invoices`,
+		);
+		return response.data;
+	},
+
+	viewInvoiceByBusinessOwner: async (
+		ownerId: string,
+		data: {
+			Ikey: string;
+			Pattern: string;
+			Option: string;
+			Serial: string;
+		},
+	): Promise<{ success: boolean; data: ViewInvoiceResponse }> => {
+		const response = await axiosInstance.post(
+			`/admin/business-owners/${ownerId}/easy-invoices/view`,
+			data,
 		);
 		return response.data;
 	},

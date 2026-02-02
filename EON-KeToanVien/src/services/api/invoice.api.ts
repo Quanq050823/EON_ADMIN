@@ -40,8 +40,7 @@ export interface CreateOutputInvoiceData {
 	notes?: string;
 }
 
-export interface UpdateOutputInvoiceData
-	extends Partial<CreateOutputInvoiceData> {}
+export interface UpdateOutputInvoiceData extends Partial<CreateOutputInvoiceData> {}
 
 export interface InvoiceListParams {
 	page?: number;
@@ -56,6 +55,63 @@ export interface TaxTotal {
 	vat10: number;
 	totalVat: number;
 	period: string;
+}
+
+export interface EasyInvoiceItem {
+	Html: string | null;
+	InvoiceStatus: number;
+	Buyer: string | null;
+	TaxAmount: number;
+	Extra: string | null;
+	PublishedBy: string | null;
+	Type: number;
+	HasSigned: boolean;
+	DocumentStatus: string | null;
+	Pattern: string;
+	Serial: string;
+	No: string;
+	Ikey: string;
+	ArisingDate: string;
+	IssueDate: string;
+	CustomerName: string;
+	CustomerAddress: string;
+	CustomerCode: string;
+	CustomerTaxCode: string;
+	Total: number;
+	Amount: number;
+	LookupCode: string;
+	LinkView: string;
+	ModifiedDate: string;
+	IsSentTCTSummary: boolean;
+	TCTCheckStatus: string;
+	TCTErrorMessage: string | null;
+	TaxAuthorityCode: string | null;
+	CusIdentification: string | null;
+	BudgetaryRelationshipCode: string | null;
+	PassportNo: string | null;
+}
+
+export interface EasyInvoiceResponse {
+	Status: number;
+	Message: string;
+	Data: {
+		Page: number;
+		PageSize: number;
+		TotalRecords: number;
+		TotalPages: number;
+		Pattern: string | null;
+		Invoices: EasyInvoiceItem[];
+	};
+	ErrorCode: number;
+}
+
+export interface GetInvoiceAutoResponse {
+	success: boolean;
+	data: EasyInvoiceResponse;
+	dateRange: {
+		FromDate: string;
+		ToDate: string;
+	};
 }
 
 /**
@@ -83,7 +139,7 @@ export const invoiceApi = {
 	 */
 	update: async (
 		id: string,
-		data: UpdateOutputInvoiceData
+		data: UpdateOutputInvoiceData,
 	): Promise<OutputInvoice> => {
 		const response = await axiosInstance.put(`/output-invoices/${id}`, data);
 		return response.data;
@@ -98,10 +154,18 @@ export const invoiceApi = {
 	},
 
 	/**
+	 * Get EasyInvoice auto (for specific business owner)
+	 */
+	getEasyInvoiceAuto: async (): Promise<GetInvoiceAutoResponse> => {
+		const response = await axiosInstance.get("/easyinvoice/getInvoiceAuto");
+		return response.data;
+	},
+
+	/**
 	 * List invoices
 	 */
 	list: async (
-		params?: InvoiceListParams
+		params?: InvoiceListParams,
 	): Promise<{
 		invoices: OutputInvoice[];
 		total: number;
