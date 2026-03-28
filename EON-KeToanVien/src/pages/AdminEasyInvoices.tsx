@@ -40,8 +40,10 @@ import {
 	Filter,
 	Download,
 	Eye,
+	ChevronLeft,
+	ChevronRight,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 
@@ -53,6 +55,15 @@ export default function AdminEasyInvoices() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [dateFilter, setDateFilter] = useState<string>("all");
+
+	// Pagination
+	const PAGE_SIZE = 20;
+	const [page, setPage] = useState(1);
+	// knownTotal: set from first response, used to reverse-paginate (newest first)
+	const [knownTotal, setKnownTotal] = useState<number | null>(null);
+	const totalPages = knownTotal !== null ? Math.max(1, Math.ceil(knownTotal / PAGE_SIZE)) : 1;
+	// Map user page (1 = newest) → API page (1 = oldest)
+	const apiPage = knownTotal !== null ? Math.max(1, totalPages - page + 1) : 1;
 
 	// Invoice detail dialog
 	const [showInvoiceDetail, setShowInvoiceDetail] = useState(false);
@@ -67,14 +78,26 @@ export default function AdminEasyInvoices() {
 		error,
 		refetch,
 	} = useQuery({
-		queryKey: ["admin-easy-invoices", id],
-		queryFn: () => adminApi.getEasyInvoicesByBusinessOwner(id!),
+		queryKey: ["admin-easy-invoices", id, apiPage],
+		queryFn: () => adminApi.getEasyInvoicesByBusinessOwner(id!, { page: apiPage, pageSize: PAGE_SIZE }),
 		enabled: !!id,
 	});
 
-	const invoices = response?.data?.Data?.Invoices || [];
+	// Sync TotalRecords whenever a response arrives (keeps totalPages accurate)
+	useEffect(() => {
+		const total = response?.data?.Data?.TotalRecords;
+		if (total != null) setKnownTotal(total);
+	}, [response]);
+
+	const rawInvoices: EasyInvoiceItem[] = response?.data?.Data?.Invoices || [];
+	// Sort newest first within each (already reverse-paginated) page
+	const invoices = [...rawInvoices].sort((a, b) => {
+		const [dA, mA, yA] = a.ArisingDate.split("/").map(Number);
+		const [dB, mB, yB] = b.ArisingDate.split("/").map(Number);
+		return new Date(yB, mB - 1, dB).getTime() - new Date(yA, mA - 1, dA).getTime();
+	});
 	const dateRange = response?.dateRange;
-	const totalRecords = response?.data?.Data?.TotalRecords || 0;
+	const totalRecords = knownTotal ?? 0;
 
 	// Load invoice detail
 	const handleViewInvoice = async (invoice: EasyInvoiceItem) => {
@@ -383,13 +406,13 @@ export default function AdminEasyInvoices() {
 								<Input
 									placeholder="Tìm kiếm theo tên KH, số HĐ, MST..."
 									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
+									onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
 									className="pl-9"
 								/>
 							</div>
 						</div>
 
-						<Select value={statusFilter} onValueChange={setStatusFilter}>
+						<Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
 							<SelectTrigger className="w-full md:w-[200px]">
 								<SelectValue placeholder="Trạng thái" />
 							</SelectTrigger>
@@ -401,7 +424,7 @@ export default function AdminEasyInvoices() {
 							</SelectContent>
 						</Select>
 
-						<Select value={dateFilter} onValueChange={setDateFilter}>
+						<Select value={dateFilter} onValueChange={(v) => { setDateFilter(v); setPage(1); }}>
 							<SelectTrigger className="w-full md:w-[200px]">
 								<SelectValue placeholder="Thời gian" />
 							</SelectTrigger>
@@ -418,7 +441,9 @@ export default function AdminEasyInvoices() {
 			{/* Invoice Table */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Danh sách hóa đơn ({filteredInvoices.length})</CardTitle>
+					<CardTitle>
+						Danh sách hóa đơn ({filteredInvoices.length} / {totalRecords})
+					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<div className="rounded-md border">
@@ -510,6 +535,32 @@ export default function AdminEasyInvoices() {
 								)}
 							</TableBody>
 						</Table>
+					</div>
+					{/* Pagination */}
+					<div className="flex items-center justify-between mt-4">
+						<p className="text-sm text-muted-foreground">
+							Trang {page} / {totalPages} &mdash; Tổng {totalRecords} hóa đơn
+						</p>
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => setPage((p) => Math.max(1, p - 1))}
+								disabled={page <= 1}
+							>
+								<ChevronLeft className="h-4 w-4" />
+								Trước
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+								disabled={page >= totalPages}
+							>
+								Sau
+								<ChevronRight className="h-4 w-4" />
+							</Button>
+						</div>
 					</div>
 				</CardContent>
 			</Card>

@@ -26,6 +26,12 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
 	adminApi,
 	type AdminBusinessOwner,
 	type AdminInvoiceIn,
@@ -57,6 +63,7 @@ import {
 	Search,
 	ArrowUpDown,
 	Eye,
+	Info,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -108,6 +115,12 @@ export default function AdminBusinessOwnerDetail() {
 		useState<AdminOutputInvoice | null>(null);
 	const [isOutputInvoiceDetailOpen, setIsOutputInvoiceDetailOpen] =
 		useState(false);
+
+	// Product materials detail modal
+	const [selectedProduct, setSelectedProduct] = useState<AdminProduct | null>(
+		null,
+	);
+	const [isMaterialsDetailOpen, setIsMaterialsDetailOpen] = useState(false);
 
 	// Tax statistics filters
 	const currentYear = new Date().getFullYear();
@@ -212,6 +225,21 @@ export default function AdminBusinessOwnerDetail() {
 	const storageItems = storageItemsData?.data || [];
 	const storageItemsPagination = storageItemsData?.pagination;
 
+	// Fetch ALL storage items for material name lookup (no pagination)
+	const { data: allStorageItemsData } = useQuery({
+		queryKey: ["admin-all-storage-items", id],
+		queryFn: () =>
+			adminApi.getStorageItemsByBusinessOwner(id!, {
+				page: 1,
+				limit: 10000, // Get all items
+				sortBy: "name",
+				sortOrder: 1,
+			}),
+		enabled: !!id,
+	});
+
+	const allStorageItems = allStorageItemsData?.data || [];
+
 	const { data: productsData, isLoading: isLoadingProducts } = useQuery({
 		queryKey: [
 			"admin-products",
@@ -287,6 +315,38 @@ export default function AdminBusinessOwnerDetail() {
 			style: "currency",
 			currency: "VND",
 		}).format(amount);
+	};
+
+	// Get material name from component ID or name
+	const getMaterialName = (component: string): string => {
+		// Try to find by ID
+		if (component && component.match(/^[0-9a-fA-F]{24}$/)) {
+			const item = allStorageItems.find((s) => s._id === component);
+			if (item) return item.name;
+		}
+
+		// Try to find by name
+		const itemByName = allStorageItems.find((s) => s.name === component);
+		if (itemByName) return itemByName.name;
+
+		// Try to find by conversion unit name
+		for (const item of allStorageItems) {
+			if (
+				item.conversionUnit?.to &&
+				item.conversionUnit.isActive &&
+				Array.isArray(item.conversionUnit.to)
+			) {
+				const found = item.conversionUnit.to.find(
+					(conv) => conv.itemName === component,
+				);
+				if (found) {
+					return `${item.name} (${component})`;
+				}
+			}
+		}
+
+		// Return original component if not found
+		return component;
 	};
 
 	const getStatusBadge = (status: string) => {
@@ -1214,8 +1274,6 @@ export default function AdminBusinessOwnerDetail() {
 												<TableHead>Người bán</TableHead>
 												<TableHead>Mã số thuế NB</TableHead>
 												<TableHead>Ngày lập</TableHead>
-												<TableHead className="text-right">Tổng tiền</TableHead>
-												<TableHead className="text-right">Thuế GTGT</TableHead>
 												<TableHead className="text-right">Tổng cộng</TableHead>
 												<TableHead>Trạng thái</TableHead>
 												<TableHead className="text-right"></TableHead>
@@ -1233,12 +1291,6 @@ export default function AdminBusinessOwnerDetail() {
 													</TableCell>
 													<TableCell>{invoice.nbmst || "N/A"}</TableCell>
 													<TableCell>{formatDate(invoice.tdlap)}</TableCell>
-													<TableCell className="text-right">
-														{formatCurrency(invoice.tgtcthue)}
-													</TableCell>
-													<TableCell className="text-right">
-														{formatCurrency(invoice.tgtthue)}
-													</TableCell>
 													<TableCell className="text-right font-medium">
 														{formatCurrency(invoice.tgtttbso)}
 													</TableCell>
@@ -1431,72 +1483,91 @@ export default function AdminBusinessOwnerDetail() {
 												<TableHead>Ký hiệu</TableHead>
 												<TableHead>Số hóa đơn</TableHead>
 												<TableHead>Người mua</TableHead>
-												<TableHead>Mã số thuế NM</TableHead>
 												<TableHead>Ngày lập</TableHead>
-												<TableHead className="text-right">Tổng tiền</TableHead>
-												<TableHead className="text-right">Thuế GTGT</TableHead>
-												<TableHead className="text-right">Thuế TNCN</TableHead>
-												<TableHead className="text-right">Tổng cộng</TableHead>
+												<TableHead className="text-right">
+													<span className="inline-flex items-center gap-1">
+														<DollarSign className="h-3 w-3 text-green-600" />
+														<span className="text-green-600 font-semibold">
+															Thuế GTGT
+														</span>
+													</span>
+												</TableHead>
+												<TableHead className="text-right">
+													<span className="inline-flex items-center gap-1">
+														<DollarSign className="h-3 w-3 text-orange-600" />
+														<span className="text-orange-600 font-semibold">
+															Thuế TNCN
+														</span>
+													</span>
+												</TableHead>
+												<TableHead className="text-right">
+													<span className="inline-flex items-center gap-1">
+														<DollarSign className="h-3 w-3 text-primary" />
+														<span className="text-primary font-semibold">
+															Tổng cộng
+														</span>
+													</span>
+												</TableHead>
 												<TableHead>Trạng thái</TableHead>
 												<TableHead className="text-right">Thao tác</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
-											{outputInvoices.map((invoice) => (
-												<TableRow key={invoice._id}>
-													<TableCell className="font-medium">
-														{invoice.khhdon || "N/A"}
-													</TableCell>
-													<TableCell>{invoice.shdon || "N/A"}</TableCell>
-													<TableCell className="max-w-[200px] truncate">
-														{invoice.nmten || "N/A"}
-													</TableCell>
-													<TableCell>{invoice.nmmst || "N/A"}</TableCell>
-													<TableCell>{formatDate(invoice.tdlap)}</TableCell>
-													<TableCell className="text-right">
-														{formatCurrency(Number(invoice.tgtcthue) || 0)}
-													</TableCell>
-													<TableCell className="text-right">
-														{formatCurrency(invoice.totalGTGT || 0)}
-													</TableCell>
-													<TableCell className="text-right">
-														{formatCurrency(invoice.totalTNCN || 0)}
-													</TableCell>
-													<TableCell className="text-right font-medium">
-														{formatCurrency(Number(invoice.tgtttbso) || 0)}
-													</TableCell>
-													<TableCell>
-														<Badge
-															variant={
-																invoice.tthai === "1" ? "default" : "secondary"
-															}
-														>
-															{getInvoiceStatusText(
-																invoice.tthai === "1"
-																	? 1
-																	: invoice.tthai === "2"
-																		? 2
-																		: invoice.tthai === "3"
-																			? 3
-																			: undefined,
-															)}
-														</Badge>
-													</TableCell>
-													<TableCell className="text-right">
-														<Button
-															variant="ghost"
-															size="sm"
-															onClick={() => {
-																setSelectedOutputInvoice(invoice);
-																setIsOutputInvoiceDetailOpen(true);
-															}}
-														>
-															<Eye className="h-4 w-4 mr-1" />
-															Chi tiết
-														</Button>
-													</TableCell>
-												</TableRow>
-											))}
+											{outputInvoices.map((invoice) => {
+												return (
+													<TableRow key={invoice._id}>
+														<TableCell className="font-medium">
+															{invoice.khhdon || "N/A"}
+														</TableCell>
+														<TableCell>{invoice.shdon || "N/A"}</TableCell>
+														<TableCell className="max-w-[200px] truncate">
+															{invoice.nmten || "Khách vãng lai"}
+														</TableCell>
+														<TableCell>{formatDate(invoice.ncnhat)}</TableCell>
+														<TableCell className="text-right">
+															{formatCurrency(invoice.totalGTGT || 0)}
+														</TableCell>
+														<TableCell className="text-right">
+															{formatCurrency(invoice.totalTNCN || 0)}
+														</TableCell>
+														<TableCell className="text-right font-medium">
+															{formatCurrency(Number(invoice.tgtttbso) || 0)}
+														</TableCell>
+														<TableCell>
+															<Badge
+																variant={
+																	invoice.tthai === "1"
+																		? "default"
+																		: "secondary"
+																}
+															>
+																{getInvoiceStatusText(
+																	invoice.tthai === "1"
+																		? 1
+																		: invoice.tthai === "2"
+																			? 2
+																			: invoice.tthai === "3"
+																				? 3
+																				: undefined,
+																)}
+															</Badge>
+														</TableCell>
+														<TableCell className="text-right">
+															<Button
+																variant="ghost"
+																size="sm"
+																onClick={() => {
+																	setSelectedOutputInvoice(invoice);
+																	setIsOutputInvoiceDetailOpen(true);
+																}}
+															>
+																<Eye className="h-4 w-4 mr-1" />
+																Chi tiết
+															</Button>
+														</TableCell>
+													</TableRow>
+												);
+											})}
 										</TableBody>
 									</Table>
 
@@ -1929,74 +2000,143 @@ export default function AdminBusinessOwnerDetail() {
 											</TableRow>
 										</TableHeader>
 										<TableBody>
-											{products.map((product) => (
-												<TableRow key={product._id}>
-													<TableCell>
-														<div className="flex items-center gap-3">
-															{product.imageUrl ? (
-																<img
-																	src={product.imageUrl}
-																	alt={product.name}
-																	className="h-10 w-10 rounded object-cover"
-																/>
-															) : (
-																<div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
-																	<ShoppingCart className="h-5 w-5 text-muted-foreground" />
-																</div>
-															)}
-															<div>
-																<p className="font-medium">{product.name}</p>
-																{product.description && (
-																	<p className="text-sm text-muted-foreground truncate max-w-[200px]">
-																		{product.description}
-																	</p>
+											{products.map((product) => {
+												return (
+													<TableRow key={product._id}>
+														<TableCell>
+															<div className="flex items-center gap-3">
+																{product.imageUrl ? (
+																	<img
+																		src={product.imageUrl}
+																		alt={product.name}
+																		className="h-10 w-10 rounded object-cover"
+																	/>
+																) : (
+																	<div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
+																		<ShoppingCart className="h-5 w-5 text-muted-foreground" />
+																	</div>
 																)}
+																<div>
+																	<p className="font-medium">{product.name}</p>
+																	{product.description && (
+																		<p className="text-sm text-muted-foreground truncate max-w-[200px]">
+																			{product.description}
+																		</p>
+																	)}
+																</div>
 															</div>
-														</div>
-													</TableCell>
-													<TableCell className="font-mono text-sm">
-														{product.code}
-													</TableCell>
-													<TableCell>
-														{product.category || (
-															<span className="text-muted-foreground">N/A</span>
-														)}
-													</TableCell>
-													<TableCell>
-														{product.unit || (
-															<span className="text-muted-foreground">N/A</span>
-														)}
-													</TableCell>
-													<TableCell className="text-right font-medium">
-														{formatCurrency(product.price)}
-													</TableCell>
-													<TableCell className="text-right">
-														{product.stock.toLocaleString("vi-VN")}
-													</TableCell>
-													<TableCell>
-														{product.materials &&
-														product.materials.length > 0 ? (
-															<Badge variant="outline">
-																{product.materials.length} NL
+														</TableCell>
+														<TableCell className="font-mono text-sm">
+															{product.code}
+														</TableCell>
+														<TableCell>
+															{product.category || (
+																<span className="text-muted-foreground">
+																	N/A
+																</span>
+															)}
+														</TableCell>
+														<TableCell>
+															{product.unit || (
+																<span className="text-muted-foreground">
+																	N/A
+																</span>
+															)}
+														</TableCell>
+														<TableCell className="text-right font-medium">
+															{formatCurrency(product.price)}
+														</TableCell>
+														<TableCell className="text-right">
+															<TooltipProvider>
+																<Tooltip>
+																	<TooltipTrigger asChild>
+																		<div className="flex items-center justify-end gap-1">
+																			<span>
+																				{product.calculatedStock !== undefined
+																					? product.calculatedStock.toLocaleString(
+																							"vi-VN",
+																						)
+																					: product.stock.toLocaleString(
+																							"vi-VN",
+																						)}
+																			</span>
+																			{product.materials &&
+																				product.materials.length > 0 &&
+																				product.calculatedStock !==
+																					undefined && (
+																					<Info className="h-3 w-3 text-muted-foreground" />
+																				)}
+																		</div>
+																	</TooltipTrigger>
+																	{product.materials &&
+																		product.materials.length > 0 &&
+																		product.calculatedStock !== undefined && (
+																			<TooltipContent>
+																				<div className="text-sm">
+																					<p className="font-semibold mb-1">
+																						Tồn kho được tính dựa trên nguyên
+																						liệu:
+																					</p>
+																					<ul className="space-y-1">
+																						{product.materials.map(
+																							(mat, idx) => (
+																								<li key={idx}>
+																									•{" "}
+																									{getMaterialName(
+																										mat.component,
+																									)}
+																									: {mat.quantity} {mat.unit}
+																								</li>
+																							),
+																						)}
+																					</ul>
+																					<p className="mt-2 text-xs text-muted-foreground">
+																						Số lượng có thể sản xuất:{" "}
+																						{product.calculatedStock.toLocaleString(
+																							"vi-VN",
+																						)}{" "}
+																						sản phẩm
+																					</p>
+																				</div>
+																			</TooltipContent>
+																		)}
+																</Tooltip>
+															</TooltipProvider>
+														</TableCell>
+														<TableCell>
+															{product.materials &&
+															product.materials.length > 0 ? (
+																<Badge
+																	variant="outline"
+																	className="cursor-pointer hover:bg-muted/50 transition-colors"
+																	onClick={() => {
+																		setSelectedProduct(product);
+																		setIsMaterialsDetailOpen(true);
+																	}}
+																>
+																	{product.materials.length} NL
+																</Badge>
+															) : (
+																<span className="text-muted-foreground text-sm">
+																	Không có
+																</span>
+															)}
+														</TableCell>
+														<TableCell>
+															<Badge
+																variant={
+																	product.isActive ? "default" : "secondary"
+																}
+															>
+																{product.isActive ? "Hoạt động" : "Ngưng bán"}
 															</Badge>
-														) : (
-															<span className="text-muted-foreground text-sm">
-																Không có
-															</span>
-														)}
-													</TableCell>
-													<TableCell>
-														<Badge
-															variant={
-																product.isActive ? "default" : "secondary"
-															}
-														>
-															{product.isActive ? "Hoạt động" : "Ngưng bán"}
-														</Badge>
-													</TableCell>
-													<TableCell>{formatDate(product.createdAt)}</TableCell>
-												</TableRow>
-											))}
+														</TableCell>
+														<TableCell>
+															{formatDate(product.createdAt)}
+														</TableCell>
+													</TableRow>
+												);
+											})}
 										</TableBody>
 									</Table>
 
@@ -2642,6 +2782,175 @@ export default function AdminBusinessOwnerDetail() {
 									</CardContent>
 								</Card>
 							)}
+						</div>
+					)}
+				</DialogContent>
+			</Dialog>
+
+			{/* Product Materials Detail Modal */}
+			<Dialog
+				open={isMaterialsDetailOpen}
+				onOpenChange={setIsMaterialsDetailOpen}
+			>
+				<DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<Package className="h-5 w-5" />
+							Chi tiết nguyên liệu
+						</DialogTitle>
+					</DialogHeader>
+					{selectedProduct && (
+						<div className="space-y-6">
+							{/* Product Info */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg">Thông tin sản phẩm</CardTitle>
+								</CardHeader>
+								<CardContent className="space-y-3">
+									<div className="flex items-center gap-3">
+										{selectedProduct.imageUrl ? (
+											<img
+												src={selectedProduct.imageUrl}
+												alt={selectedProduct.name}
+												className="h-16 w-16 rounded object-cover"
+											/>
+										) : (
+											<div className="flex h-16 w-16 items-center justify-center rounded bg-muted">
+												<ShoppingCart className="h-8 w-8 text-muted-foreground" />
+											</div>
+										)}
+										<div className="flex-1">
+											<h3 className="font-semibold text-lg">
+												{selectedProduct.name}
+											</h3>
+											<div className="flex items-center gap-4 mt-1">
+												<span className="text-sm text-muted-foreground">
+													Mã:{" "}
+													<span className="font-mono">
+														{selectedProduct.code}
+													</span>
+												</span>
+												{selectedProduct.category && (
+													<span className="text-sm text-muted-foreground">
+														• {selectedProduct.category}
+													</span>
+												)}
+											</div>
+										</div>
+									</div>
+									<Separator />
+									<div className="grid grid-cols-2 gap-4">
+										<div>
+											<p className="text-sm text-muted-foreground">Giá bán</p>
+											<p className="font-medium">
+												{formatCurrency(selectedProduct.price)}
+											</p>
+										</div>
+										<div>
+											<p className="text-sm text-muted-foreground">
+												Tồn kho hiện tại
+											</p>
+											<p className="font-medium">
+												{selectedProduct.calculatedStock !== undefined
+													? selectedProduct.calculatedStock.toLocaleString(
+															"vi-VN",
+														)
+													: selectedProduct.stock.toLocaleString("vi-VN")}{" "}
+												{selectedProduct.unit || "sản phẩm"}
+											</p>
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Materials List */}
+							<Card>
+								<CardHeader>
+									<CardTitle className="text-lg flex items-center justify-between">
+										<span>Danh sách nguyên liệu</span>
+										<Badge variant="secondary">
+											{selectedProduct.materials?.length || 0} nguyên liệu
+										</Badge>
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									{selectedProduct.materials &&
+									selectedProduct.materials.length > 0 ? (
+										<div className="space-y-3">
+											{selectedProduct.materials.map((material, index) => {
+												return (
+													<div
+														key={index}
+														className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
+													>
+														<div className="flex items-center gap-3">
+															<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+																<Package className="h-5 w-5 text-primary" />
+															</div>
+															<div>
+																<p className="font-medium">
+																	{getMaterialName(material.component)}
+																</p>
+																<p className="text-sm text-muted-foreground">
+																	Nguyên liệu #{index + 1}
+																</p>
+															</div>
+														</div>
+														<div className="text-right">
+															<p className="font-semibold text-lg">
+																{material.quantity} {material.unit}
+															</p>
+															<p className="text-xs text-muted-foreground">
+																Định lượng
+															</p>
+														</div>
+													</div>
+												);
+											})}
+										</div>
+									) : (
+										<div className="text-center py-8 text-muted-foreground">
+											<Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+											<p>Sản phẩm chưa có nguyên liệu</p>
+										</div>
+									)}
+								</CardContent>
+							</Card>
+
+							{/* Stock Calculation Info */}
+							{selectedProduct.materials &&
+								selectedProduct.materials.length > 0 &&
+								selectedProduct.calculatedStock !== undefined && (
+									<Card className="border-primary/50 bg-primary/5">
+										<CardHeader>
+											<CardTitle className="text-lg flex items-center gap-2">
+												<Info className="h-5 w-5 text-primary" />
+												Tính toán tồn kho
+											</CardTitle>
+										</CardHeader>
+										<CardContent>
+											<div className="space-y-3">
+												<div className="flex items-center justify-between p-4 rounded-lg bg-background border-2 border-primary">
+													<div>
+														<p className="text-sm text-muted-foreground mb-1">
+															Số lượng có thể sản xuất
+														</p>
+														<p className="text-2xl font-bold text-primary">
+															{selectedProduct.calculatedStock.toLocaleString(
+																"vi-VN",
+															)}
+														</p>
+													</div>
+													<div className="text-right">
+														<p className="text-sm text-muted-foreground">
+															{selectedProduct.unit || "sản phẩm"}
+														</p>
+													</div>
+												</div>
+											</div>
+										</CardContent>
+									</Card>
+								)}
 						</div>
 					)}
 				</DialogContent>

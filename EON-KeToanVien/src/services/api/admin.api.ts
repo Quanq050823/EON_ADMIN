@@ -43,6 +43,7 @@ export interface AdminBusinessOwner {
 		password?: string;
 		mst?: string;
 		serial?: string;
+		apiUrl?: string;
 	};
 	documents?: Array<{
 		name: string;
@@ -258,6 +259,7 @@ export interface AdminProduct {
 	description?: string;
 	imageUrl?: string;
 	stock: number;
+	calculatedStock?: number; // Tồn kho được tính toán dựa trên nguyên liệu
 	isActive: boolean;
 	tchat: number;
 	materials?: Array<{
@@ -449,9 +451,13 @@ export const adminApi = {
 	},
 
 	// EasyInvoice Management
-	getEasyInvoicesByBusinessOwner: async (ownerId: string) => {
+	getEasyInvoicesByBusinessOwner: async (
+		ownerId: string,
+		params?: { page?: number; pageSize?: number },
+	) => {
 		const response = await axiosInstance.get(
 			`/admin/business-owners/${ownerId}/easy-invoices`,
+			{ params },
 		);
 		return response.data;
 	},

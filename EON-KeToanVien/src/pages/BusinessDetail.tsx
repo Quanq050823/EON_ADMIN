@@ -226,15 +226,15 @@ export default function BusinessDetail() {
 																	invoice.status === "paid"
 																		? "badge-success"
 																		: invoice.status === "overdue"
-																		? "badge-warning"
-																		: "badge-destructive"
+																			? "badge-warning"
+																			: "badge-destructive"
 																}
 															>
 																{invoice.status === "paid"
 																	? "Đã TT"
 																	: invoice.status === "overdue"
-																	? "Chờ TT"
-																	: "Quá hạn"}
+																		? "Chờ TT"
+																		: "Quá hạn"}
 															</Badge>
 														</TableCell>
 													</TableRow>
@@ -296,15 +296,15 @@ export default function BusinessDetail() {
 																	invoice.status === "paid"
 																		? "badge-success"
 																		: invoice.status === "overdue"
-																		? "badge-warning"
-																		: "badge-destructive"
+																			? "badge-warning"
+																			: "badge-destructive"
 																}
 															>
 																{invoice.status === "paid"
 																	? "Đã TT"
 																	: invoice.status === "overdue"
-																	? "Chờ TT"
-																	: "Quá hạn"}
+																		? "Chờ TT"
+																		: "Quá hạn"}
 															</Badge>
 														</TableCell>
 													</TableRow>
